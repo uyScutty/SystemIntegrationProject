@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "dgSpecHash": "Q7oR6eDp3vw=",
+  "success": true,
+  "projectFilePath": "C:\\Users\\tdhog\\Desktop\\System integration\\microservice-VoiceVideo-microservice\\VoiceVideoService\\VoiceVideoService.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\tdhog\\.nuget\\packages\\microsoft.aspnetcore.openapi\\9.0.18\\microsoft.aspnetcore.openapi.9.0.18.nupkg.sha512",
+    "C:\\Users\\tdhog\\.nuget\\packages\\microsoft.openapi\\1.6.17\\microsoft.openapi.1.6.17.nupkg.sha512"
+  ],
+  "logs": []
+}

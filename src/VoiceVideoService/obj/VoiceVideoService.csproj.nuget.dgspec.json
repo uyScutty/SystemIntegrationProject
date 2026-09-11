@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\tdhog\\Desktop\\System integration\\microservice-VoiceVideo-microservice\\VoiceVideoService\\VoiceVideoService.csproj": {}
+    "C:\\Users\\tdhog\\Desktop\\System integration\\microservice-VoiceVideo-microservice\\src\\VoiceVideoService\\VoiceVideoService.csproj": {}
   },
   "projects": {
-    "C:\\Users\\tdhog\\Desktop\\System integration\\microservice-VoiceVideo-microservice\\VoiceVideoService\\VoiceVideoService.csproj": {
+    "C:\\Users\\tdhog\\Desktop\\System integration\\microservice-VoiceVideo-microservice\\src\\VoiceVideoService\\VoiceVideoService.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\tdhog\\Desktop\\System integration\\microservice-VoiceVideo-microservice\\VoiceVideoService\\VoiceVideoService.csproj",
+        "projectUniqueName": "C:\\Users\\tdhog\\Desktop\\System integration\\microservice-VoiceVideo-microservice\\src\\VoiceVideoService\\VoiceVideoService.csproj",
         "projectName": "VoiceVideoService",
-        "projectPath": "C:\\Users\\tdhog\\Desktop\\System integration\\microservice-VoiceVideo-microservice\\VoiceVideoService\\VoiceVideoService.csproj",
+        "projectPath": "C:\\Users\\tdhog\\Desktop\\System integration\\microservice-VoiceVideo-microservice\\src\\VoiceVideoService\\VoiceVideoService.csproj",
         "packagesPath": "C:\\Users\\tdhog\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\tdhog\\Desktop\\System integration\\microservice-VoiceVideo-microservice\\VoiceVideoService\\obj\\",
+        "outputPath": "C:\\Users\\tdhog\\Desktop\\System integration\\microservice-VoiceVideo-microservice\\src\\VoiceVideoService\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
@@ -51,6 +51,10 @@
         "net9.0": {
           "targetAlias": "net9.0",
           "dependencies": {
+            "EasyNetQ": {
+              "target": "Package",
+              "version": "[8.1.7, )"
+            },
             "Microsoft.AspNetCore.OpenApi": {
               "target": "Package",
               "version": "[9.0.18, )"

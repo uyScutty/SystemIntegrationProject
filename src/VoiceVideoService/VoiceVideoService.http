@@ -1,6 +1,4 @@
-@VoiceVideoService_HostAddress = http://localhost:5141
+POST http://localhost:8080/api/voicevideo/publish
+Content-Type: application/json
 
-GET {{VoiceVideoService_HostAddress}}/weatherforecast/
-Accept: application/json
-
-###
+"Min første testbesked igennem Docker og RabbitMQ!"

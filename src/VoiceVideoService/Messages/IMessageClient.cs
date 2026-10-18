@@ -1,4 +1,4 @@
-namespace VoiceVideoService.Messaging;
+namespace VoiceVideoService.Messages;
 
 public interface IMessageClient
 {
@@ -6,5 +6,5 @@ public interface IMessageClient
     Task PublishAsync<T>(T message, CancellationToken cancellationToken = default);
 
     // Lytter (subscriber) på en kø efter en bestemt beskedtype
-    Task SubscribeAsync<T>(string subscriptionId, Action<T> onMessage, CancellationToken cancellationToken = default);
+    Task SubscribeAsync<T>(string subscriptionId, Func<T, Task> onMessage, CancellationToken cancellationToken = default);
 }

@@ -1,41 +1,59 @@
+
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Shared.Contracts.Events;
 using VoiceVideoService.Messages;
 
-namespace VoiceVideoService.Messaging;
+namespace VoiceVideoService.Messages;
 
 public class VoiceVideoSubscriberService : BackgroundService
 {
     private readonly IMessageClient _messageClient;
     private readonly ILogger<VoiceVideoSubscriberService> _logger;
+    private readonly IServiceScopeFactory _scopeFactory;
 
-    public VoiceVideoSubscriberService(IMessageClient messageClient, ILogger<VoiceVideoSubscriberService> logger)
+    private readonly SubscriberReadiness _readiness;
+
+    public VoiceVideoSubscriberService(
+        IMessageClient messageClient,
+        ILogger<VoiceVideoSubscriberService> logger,
+        IServiceScopeFactory scopeFactory,
+        SubscriberReadiness readiness)
     {
         _messageClient = messageClient;
         _logger = logger;
+        _scopeFactory = scopeFactory;
+        _readiness = readiness;
     }
 
-    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    protected override async Task ExecuteAsync(
+        CancellationToken stoppingToken)
     {
-        _logger.LogInformation("Subscriber starter og lytter efter beskeder...");
+        _logger.LogInformation(
+            "VoiceVideo subscriber starter...");
 
-        // Vi lytter efter vores specifikke beskedtype (VoiceVideoProcessedMessage)
-        await _messageClient.SubscribeAsync<VoiceVideoProcessedMessage>(
-            subscriptionId: "voice-video-processor-sub",
-            onMessage: message =>
+        await _messageClient.SubscribeAsync<MessagePostedEvent>(
+            subscriptionId: "voice-video-message-posted-sub",
+
+            onMessage: async message =>
             {
-                // Her lander beskeden, når den bliver modtaget fra RabbitMQ!
-                _logger.LogInformation("Modtog besked! ID: {Id}, Status: {Status}", message.SessionId, message.Status);
-                
-                // Her kan du tilføje din forretningslogik (f.eks. gemme i database, starte AI-behandling, osv.)
+                _logger.LogInformation(
+                    "Modtog MessagePostedEvent: {MessageId}",
+                    message.MessageId);
+
+                using var scope = _scopeFactory.CreateScope();
+
+                var handler = scope.ServiceProvider
+                    .GetRequiredService<MessagePostedHandler>();
+
+                await handler.Handle(message, stoppingToken);
             },
+
             cancellationToken: stoppingToken
         );
 
-        // Vi sørger for, at baggrundstjenesten ikke lukker ned med det samme
-        while (!stoppingToken.IsCancellationRequested)
-        {
-            await Task.Delay(1000, stoppingToken);
-        }
+        _readiness.MarkReady();
+        await Task.Delay(Timeout.Infinite, stoppingToken);
     }
 }

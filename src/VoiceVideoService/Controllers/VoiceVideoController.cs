@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
-using VoiceVideoService.Messages;
-using VoiceVideoService.Messaging;
+using SharedModels;
+using VoiceVideoService.Contracts;
+using VoiceVideoService.Models;
+using VoiceVideoService.Services;
 
 namespace VoiceVideoService.Controllers;
 
@@ -8,36 +10,132 @@ namespace VoiceVideoService.Controllers;
 [Route("api/[controller]")]
 public class VoiceVideoController : ControllerBase
 {
-    private readonly IMessageClient _messageClient;
+    private readonly ICallSessionService _callSessionService;
 
-    // Her bruger vi Constructor Injection! 
-    // .NET opdager automatisk at vi mangler IMessageClient og sender den ind.
-    public VoiceVideoController(IMessageClient messageClient)
+    public VoiceVideoController(ICallSessionService callSessionService)
     {
-        _messageClient = messageClient;
+        _callSessionService = callSessionService;
     }
 
     [HttpGet]
     public IActionResult GetStatus()
     {
-        return Ok(new { Message = "Microservice is up and running!", Timestamp = DateTime.UtcNow });
+        return Ok(new
+        {
+            Message = "Microservice is up and running!",
+            Timestamp = DateTime.UtcNow
+        });
     }
 
-    // Et nyt endpoint til at teste afsendelse af en besked (Publish)
-    [HttpPost("publish")]
-    public async Task<IActionResult> PublishMessage([FromBody] string text)
+    [HttpPost("sessions")]
+    public async Task<ActionResult<CallSessionDto>> CreateSession(
+        [FromBody] CreateCallSessionRequest request,
+        CancellationToken cancellationToken)
     {
-        // 1. Vi opretter vores DTO-besked
-        var message = new VoiceVideoProcessedMessage
+        if (request.ChannelId == Guid.Empty)
         {
-            SessionId = Guid.NewGuid(),
-            Status = text,
-            Timestamp = DateTime.UtcNow
+            ModelState.AddModelError(nameof(request.ChannelId), "ChannelId is required.");
+            return ValidationProblem(ModelState);
+        }
+
+        try
+        {
+            var session = await _callSessionService.CreateAsync(
+                request.ChannelId,
+                cancellationToken);
+
+            return CreatedAtAction(
+                nameof(GetSessionById),
+                new { id = session.Id },
+                ToDto(session));
+        }
+        catch (CallSessionConflictException exception)
+        {
+            return Conflict(new ProblemDetails
+            {
+                Title = "Call session conflict",
+                Detail = exception.Message,
+                Status = StatusCodes.Status409Conflict
+            });
+        }
+    }
+
+    [HttpGet("sessions")]
+    public async Task<ActionResult<IReadOnlyCollection<CallSessionDto>>> GetAllSessions(
+        CancellationToken cancellationToken)
+    {
+        var sessions = await _callSessionService.GetAllAsync(cancellationToken);
+        return Ok(sessions.Select(ToDto).ToList());
+    }
+
+    [HttpGet("sessions/{id:guid}")]
+    public async Task<ActionResult<CallSessionDto>> GetSessionById(
+        Guid id,
+        CancellationToken cancellationToken)
+    {
+        var session = await _callSessionService.GetByIdAsync(id, cancellationToken);
+
+        if (session is null)
+        {
+            return NotFound();
+        }
+
+        return Ok(ToDto(session));
+    }
+
+    [HttpPut("sessions/{id:guid}/end")]
+    public async Task<IActionResult> EndSession(
+        Guid id,
+        CancellationToken cancellationToken)
+    {
+        var session = await _callSessionService.GetByIdAsync(id, cancellationToken);
+
+        if (session is null)
+        {
+            return NotFound();
+        }
+
+        if (session.CallStatus == "Ended")
+        {
+            return Conflict("Session is already ended.");
+        }
+
+        var success = await _callSessionService.EndSessionAsync(id, cancellationToken);
+        return success
+            ? NoContent()
+            : Conflict("Session could not be ended.");
+    }
+
+    [HttpDelete("sessions/{id:guid}")]
+    public async Task<IActionResult> DeleteSession(
+        Guid id,
+        CancellationToken cancellationToken)
+    {
+        var success = await _callSessionService.DeleteAsync(id, cancellationToken);
+        return success ? NoContent() : NotFound();
+    }
+
+    private static CallSessionDto ToDto(CallSession session)
+    {
+        return new CallSessionDto
+        {
+            CallSessionId = session.Id,
+            ChannelId = session.ChannelId,
+            StartTime = session.StartTime,
+            EndTime = session.EndTime,
+            CallStatus = session.CallStatus,
+            LastMessageAt = session.LastMessageAt,
+            ParticipantCount = session.Participants.Count,
+            Participants = session.Participants.Select(participant =>
+                new CallParticipantDto
+                {
+                    UserId = participant.UserId.ToString(),
+                    JoinedAt = participant.JoinedAt,
+                    LeftAt = participant.LeftAt,
+                    IsMuted = participant.IsMuted,
+                    IsVideoEnabled = participant.IsVideoEnabled,
+                    IsScreenSharing = participant.IsScreenSharing
+                }).ToList()
         };
-
-        // 2. Vi bruger vores abstrakte klient til at sende beskeden ud
-        await _messageClient.PublishAsync(message);
-
-        return Ok(new { Status = "Besked sendt til RabbitMQ!", Data = message });
     }
 }
